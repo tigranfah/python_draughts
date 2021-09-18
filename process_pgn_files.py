@@ -7,13 +7,15 @@ import json
 import platform
 
 
-def process():
+def process_games():
 
-    game_file_names = os.listdir("dataset")
+    game_file_names = os.listdir("dataset_pgn")
+    print(game_file_names)
 
     if platform.system() == "Darwin":
         print("remove .DS_Store")
-        game_file_names.remove(".DS_Store")
+        if ".DS_Store" in game_file_names:
+            game_file_names.remove(".DS_Store")
 
     games = {}
     id = "1"
@@ -23,7 +25,7 @@ def process():
     for name in game_file_names:
         # "master_games.pgn"
         print(name)
-        with open(os.path.join("dataset", name)) as file:
+        with open(os.path.join("dataset_pgn", name)) as file:
             content = file.read()
             content = re.sub(r'{.*?}', '', content)
             content = re.sub(r'\[Event.*?\]', '', content)
@@ -37,9 +39,11 @@ def process():
             content = re.sub(r'\[Date.*?\]', '', content)
             content = re.sub(r'\[WhiteClock.*?\]', '', content)
             content = re.sub(r'\[BlackClock.*?\]', '', content)
+            content = re.sub(r'\[ECO.*?\]', '', content)
             content = content.replace("[", '')
             content = content.replace("]", '')
             content = content.replace("\"", '')
+            content = content.replace(".", '. ')
 
             ind = 0
 
@@ -76,4 +80,4 @@ def process():
 
 
 if __name__ == "__main__":
-    process()
+    process_games()
