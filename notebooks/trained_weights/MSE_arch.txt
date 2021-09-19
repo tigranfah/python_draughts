@@ -1,0 +1,11 @@
+
+model = keras.Sequential()
+model.add(layers.Dense(unit_size, input_shape=X_train.shape[1:], activation="relu"))
+model.add(layers.Dense(unit_size, activation="relu"))
+model.add(layers.Dropout(0.3))
+model.add(layers.Dense(unit_size, activation="relu"))
+model.add(layers.Dropout(0.3))
+model.add(layers.Dense(unit_size/2, activation="relu"))
+model.add(layers.Dropout(0.3))
+model.add(layers.Dense(12, activation="sigmoid"))
+model.summary()
