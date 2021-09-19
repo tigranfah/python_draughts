@@ -61,3 +61,23 @@ def move_to_output(board, uci_move):
     output[:2] = from_pos
     output[2:] = to_pos
     return output
+
+
+def base_2(x):
+  return {
+    0 : [0, 0, 0],
+    1 : [0, 0, 1],
+    2 : [0, 1, 0],
+    3 : [0, 1, 1],
+    4 : [1, 0, 0],
+    5 : [1, 0, 1],
+    6 : [1, 1, 0],
+    7 : [1, 1, 1],
+  }[x]
+
+
+def decimal(x):
+  bits = [1 if 1 - x_ < 0.5 else 0 for x_ in x]
+  for i in range(8):
+    if base_2(i) == bits:
+      return i
