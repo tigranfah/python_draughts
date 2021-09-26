@@ -4,8 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-chess = "*"
-python-chess = "*"
+flask = "*"
+tensorflow = "*"
 
 [dev-packages]
 
