@@ -9,7 +9,7 @@ import platform
 
 def process_games():
 
-    game_file_names = os.listdir("dataset_pgn")[:100]
+    game_file_names = os.listdir("dataset_pgn/levon_dataset")
     print(game_file_names)
 
     if platform.system() == "Darwin":
@@ -26,7 +26,7 @@ def process_games():
         # "master_games.pgn"
         print(name)
         try:
-            with open(os.path.join("dataset_pgn", name), "r") as file:
+            with open(os.path.join("dataset_pgn/levon_dataset", name), "r") as file:
                 content = file.read()
                 content = re.sub(r'{.*?}', '', content)
                 content = re.sub(r'\[Event.*?\]', '', content)
@@ -78,9 +78,9 @@ def process_games():
         except Exception as ex:
             print(ex)
 
-    with open(os.path.join("dataset", "games.json"), "w") as write_file:
+    with open(os.path.join("dataset", "levon_games.json"), "w") as write_file:
         json.dump(games, write_file, indent=4)
-        print("Saved into dataset/games.json")
+        print("Saved into dataset/levon_games.json")
 
 
 if __name__ == "__main__":

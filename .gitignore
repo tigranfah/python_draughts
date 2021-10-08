@@ -8,3 +8,4 @@ output.pickle
 weights_*
 dataset
 *.swp
+tasks.txt
