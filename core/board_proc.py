@@ -105,6 +105,9 @@ def to_decimal(x):
           if np.all(binary_4bits(i) == bits):
             return i
 
+def dist2d(x1, y1, x2, y2):
+    return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+
 
 if __name__ == "__main__":
     print(to_decimal([1, 1, 0, 0]))
@@ -113,3 +116,4 @@ if __name__ == "__main__":
     print(to_decimal([1, 1, 1]))
     print(binary_3bits(7))
     print(binary_4bits(8))
+    print(dist2d(0, 0, 1, 1))

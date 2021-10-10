@@ -27,6 +27,7 @@ function request(route, type, pos) {
         url: route,
         type: type,
         data: pos,
+        // dataType: 'json',
         success: function(move) {
             make_move(move.substring(0, 2), move.substring(2, 4));
         },

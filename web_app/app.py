@@ -1,12 +1,18 @@
 #!/usr/bin/env python
 
 from flask import Flask, render_template, request
-import nmodels
 
 import sys
-sys.path.insert(0, '.')
-# import nmodels
+sys.path.insert(0, './python-chess')
+sys.path.insert(0, './core')
 
+import chess
+import nmodels
+
+board = chess.Board()
+
+nmodels.NModels.set_model(nmodels.ConvNetModel("models/my_model"))
+nmodels.NModels.get_model().model.load_weights("models/model_1_2048.h5")
 
 app = Flask(__name__)
 
@@ -19,7 +25,8 @@ def home():
 
 @app.route("/start", methods=["GET"])
 def start():
-    return "e2e4"
+    board.reset()
+    return nmodels.NModels.get_model().predict(board)
 
 
 @app.route("/about")
@@ -29,7 +36,10 @@ def about():
 
 @app.route("/move", methods=["POST"])
 def move():
-    return "g1f3"
+    # print(request.form)
+    fen = list(request.form.to_dict().keys())[0]
+    board.set_fen(fen)
+    return nmodels.NModels.get_model().predict(board)
 
 
 if __name__ == "__main__":
