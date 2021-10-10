@@ -14,6 +14,7 @@ board = chess.Board()
 nmodels.NModels.set_model(nmodels.ConvNetModel("models/my_model"))
 nmodels.NModels.get_model().model.load_weights("models/model_1_2048.h5")
 
+
 app = Flask(__name__)
 
 
