@@ -26,12 +26,9 @@ def num_to_fig(n): return num_dict[n]
 
 
 def board_to_input(board):
-    inp = []
     board = str(board).replace("\n", '').replace(" ", '')
     board.replace(" ", '')
-    for s in board:
-        inp.append(fig_to_num(s))
-    return inp
+    return [fig_to_num(pos) for pos in board]
 
 
 def input_to_board(inp):
@@ -46,7 +43,7 @@ num_pos_dict = {n : p for n, p in enumerate("abcdefgh")}
 
 
 def board_pos_to_num_pos(b_pos):
-    return np.array([8 - int(b_pos[1]), board_pos_dict[b_pos[0]]])
+    return [8 - int(b_pos[1]), board_pos_dict[b_pos[0]]]
 
 def num_pos_to_board_pos(pos):
     return f"{num_pos_dict[pos[1]]}{8 - pos[0]}"
