@@ -45,13 +45,18 @@ class Engine:
 
 def get_model(unit_size):
     model = keras.models.Sequential()
-    model.add(layers.Dense(unit_size//2, input_shape=(68, ), activation="relu"))
-    model.add(layers.Dense(unit_size, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-6, l2=1e-5)))
+    model.add(layers.Dense(256, input_shape=(68, ), activation="relu"))
+    model.add(layers.Dense(512, activation="relu"))
+    # model.add(layers.Dense(512, activation="relu"))
+    # model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(1024, activation="relu"))
     model.add(layers.Dropout(0.3))
-    model.add(layers.Dense(unit_size, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-6, l2=1e-5)))
+    model.add(layers.Dense(1024, activation="relu"))
     model.add(layers.Dropout(0.3))
-    model.add(layers.Dense(unit_size//2, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-6, l2=1e-5)))
-    model.add(layers.Dropout(0.2))
+    # model.add(layers.Dense(512, activation="relu"))
+    # model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(256, activation="relu"))
+    model.add(layers.Dropout(0.3))
     model.add(layers.Dense(1, activation="sigmoid"))
 
     model.compile(optimizer="adam",

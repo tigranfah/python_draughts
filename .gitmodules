@@ -1,6 +1,3 @@
 [submodule "python-chess"]
 	path = python-chess
 	url = https://github.com/niklasf/python-chess.git
-[submodule "web_app/static/chess_engine"]
-	path = web_app/static/chess_engine
-	url = https://github.com/jhlywa/chess.js.git

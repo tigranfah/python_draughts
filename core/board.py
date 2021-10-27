@@ -31,25 +31,25 @@ class Figure(enum.Enum):
     p = 11
 
 
-class Window:
-
-    __instance = None
-
-    def __init__(self, size, title):
-        if Window.__instance:
-            raise SingletonClass(f"{__class__.__name__} is a singleton class.")
-
-        self.__create_window(size, title)
-
-        Window.__instance = self
-
-    def __create_window(self, size, title):
-        self.root = pygame.display.set_mode(size)
-        pygame.display.set_caption(title)
-
-    @staticmethod
-    def get_instance():
-        return Window.__instance
+# class Window:
+#
+#     __instance = None
+#
+#     def __init__(self, size, title):
+#         if Window.__instance:
+#             raise SingletonClass(f"{__class__.__name__} is a singleton class.")
+#
+#         self.__create_window(size, title)
+#
+#         Window.__instance = self
+#
+#     def __create_window(self, size, title):
+#         self.root = pygame.display.set_mode(size)
+#         pygame.display.set_caption(title)
+#
+#     @staticmethod
+#     def get_instance():
+#         return Window.__instance
 
 
 class Board:
@@ -70,7 +70,8 @@ class Board:
 
     def push_uci(self, uci_move):
         out = self._engine.predict(board, uci_move)
-        if out > 0:
+        print(f"Probability {out}")
+        if out > 0.5:
             self.force_move(uci_move)
             print(str(self))
         else:
