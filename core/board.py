@@ -9,7 +9,7 @@ sys.path.insert(0, "./python-chess")
 import chess
 
 import engine
-from engine import UCIMove
+from engine import Move
 from exceptions import SingletonClass
 
 import enum
@@ -54,42 +54,31 @@ class Figure(enum.Enum):
 
 class Board:
 
-    DEFAULT_LAYOUT = list("rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR")
-    SQUARE_NAMES = ['a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8',
-                    'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7',
-                    'a6', 'b6', 'c6', 'd6', 'e6', 'f6', 'g6', 'h6',
-                    'a5', 'b5', 'c5', 'd5', 'e5', 'f5', 'g5', 'h5',
-                    'a4', 'b4', 'c4', 'd4', 'e4', 'f4', 'g4', 'h4',
-                    'a3', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3',
-                    'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2',
-                    'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1']
-
     def __init__(self):
-        self._board_layout = Board.DEFAULT_LAYOUT
-        self._engine = engine.Engine("model")
+        self._engine = engine.Engine(8)
 
-    def push_uci(self, uci_move):
-        out = self._engine.predict(board, uci_move)
+    def push(self, move):
+        # out = self._engine.predict(board, move)
         print(f"Probability {out}")
         if out > 0.5:
-            self.force_move(uci_move)
+            self.force_move(move)
             print(str(self))
         else:
-            print(f"{uci_move} is illegal move.")
+            print(f"{move} is illegal move.")
 
-    def force_move(self, uci_move):
-        from_index = Board.SQUARE_NAMES.index(uci_move.from_pos)
-        to_index = Board.SQUARE_NAMES.index(uci_move.to_pos)
-        if self._board_layout[from_index] == ".":
-            raise Exception(f"In empty {uci_move.from_pos} field there is no figure.")
-        self._board_layout[to_index] = self._board_layout[from_index]
-        self._board_layout[from_index] = "."
-
-    def __str__(self):
-        return "\n".join([f"{' '.join(self._board_layout[i*8:i*8+8])}" for i in range(8)])
-
-    def __repr__(self):
-        return str(self)
+    # def force_move(self, move):
+    #     from_index = engine.Engine.SQUARE_NAMES.index(move.from_pos)
+    #     to_index = engine.Engine.SQUARE_NAMES.index(move.to_pos)
+    #     if self._engine.layout[from_index] == ".":
+    #         raise Exception(f"In empty {move.from_pos} field there is no figure.")
+    #     self._engine.layout[to_index] = self._engine.layout[from_index]
+    #     self._engine.layout[from_index] = "."
+    #
+    # def evaluate(self, move):
+    #     for m, opps in self._engine.is_valid(move):
+    #         print(engine.Engine.SQUARE_NAMES[m])
+    #         if engine.Engine.SQUARE_NAMES.index(move.to_pos) == m:
+    #             self.force_move(move)
 
 
 # window = Window((500, 500), "neural net engine")
@@ -97,7 +86,8 @@ board = Board()
 
 print("Type moves")
 while True:
-    move = UCIMove(input())
-    board.push_uci(move)
-    # board.force_move(UCIMove("c7c5"))
-print(board)
+    print(board._engine)
+    move = Move(input())
+    board._engine.push(move)
+    # board.force_move(move)
+    # board.force_move(Move("c7c5"))

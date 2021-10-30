@@ -2,14 +2,14 @@ import numpy as np
 
 
 unique_cells = sorted(set("""
-r n b q k b n r
-p p p p . p p p
+. o . o . o . o
+o . o . o . o .
+. o . o . o . o
 . . . . . . . .
-. . . . p . . .
-. . . . P . . .
-. . . . . N . .
-P P P P . P P P
-R N B Q K B . R"""))
+. . . . . . . .
+O . O . O . O .
+. O . O . O . O
+O . O . O . O ."""))
 
 unique_cells.remove("\n")
 unique_cells.remove(" ")
