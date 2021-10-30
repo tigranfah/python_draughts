@@ -63,8 +63,10 @@ class Engine:
         possible_moves = None
 
         if fig in ["O", "o"]:
-            if fig == "O":
-                possible_moves = (from_index, -1, 1), (from_index, 1, 1)
+            if jump:
+                possible_moves = (from_index, -1, 1), (from_index, 1, 1), (from_index, -1, -1), (from_index, 1, -1)
+            elif fig == "O":
+                possible_moves = (from_index, -1, 1), (from_index, 1, 1),
             elif fig == "o":
                 possible_moves = (from_index, -1, -1), (from_index, 1, -1)
 
