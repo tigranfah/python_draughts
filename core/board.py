@@ -66,6 +66,9 @@ class Board:
         else:
             print(f"{move} is illegal move.")
 
+    def valid_moves(self):
+        return tuple(Move(engine.BoardBase.get_pos(f) + engine.BoardBase.get_pos(t)) for f, t in self._engine.valid_moves())
+
     def push_move(self, str_move):
         move = Move(str_move)
         self._engine.push(move)

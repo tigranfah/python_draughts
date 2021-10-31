@@ -16,6 +16,17 @@ import board_proc as bp
 
 class BoardBase:
 
+    W = "O" # white normal
+    WQ = "X" # white special
+
+    B = "o" # black normal
+    BQ = "x" # black special
+
+    E = "." # empty
+
+    WHITE = ("O", "X")
+    BLACK = ("o", "x")
+
     DEFAULT_LAYOUT = list(".o.o.o.oo.o.o.o..o.o.o.o.........X......O.O.O.O..O.O.O.OO.O.O.O.")
     SQUARE_NAMES = ['a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8',
                     'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7',
@@ -25,7 +36,7 @@ class BoardBase:
                     'a3', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3',
                     'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2',
                     'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1']
-    
+
     @staticmethod
     def get_default_layout():
         return copy.deepcopy(BoardBase.DEFAULT_LAYOUT)
@@ -62,10 +73,10 @@ class Move:
         return Move(f"{BoardBase.get_pos(from_ind)}{BoardBase.get_pos(to_ind)}")
 
     def __str__(self):
-        return self.from_pos + self.to_pos
+        return f"Move('{self.from_pos + self.to_pos}')"
 
     def __repr__(self):
-        return self.from_pos + self.to_pos
+        return str(self)
 
 
 class Engine:
@@ -75,36 +86,43 @@ class Engine:
         self.size = size
         self._layout = BoardBase.get_default_layout()
         self._move_stack = []
-        # self.board = board
 
-    def valid_moves(self, from_index, jump=False):
+    def valid_moves(self):
+        figs = BoardBase.WHITE if self.turn else BoardBase.BLACK
+        valid_moves = []
+        for i in range(self.size**2):
+            if self.get(i) in figs:
+                valid_moves.extend([(i, m) for m, o in self.valid_moves_from_index(i)])
+
+        return valid_moves
+
+    def valid_moves_from_index(self, from_index, jump=False):
         fig = self.get(from_index)
         valid_moves = []
         only_jump = jump
         possible_moves = None
 
-        if fig in ["O", "o"]:
+        if fig in [BoardBase.W, BoardBase.B]:
             if jump:
                 possible_moves = (from_index, -1, 1), (from_index, 1, 1), (from_index, -1, -1), (from_index, 1, -1)
-            elif fig == "O":
+            elif fig == BoardBase.W:
                 possible_moves = (from_index, -1, 1), (from_index, 1, 1),
-            elif fig == "o":
+            elif fig == BoardBase.B:
                 possible_moves = (from_index, -1, -1), (from_index, 1, -1)
 
             for i, x, y in possible_moves:
                 if self.get_index(i, x, y):
                     index = self.get_index(i, x, y)
                     # print(index)
-                    if not only_jump and self.get(index) == ".":
+                    if not only_jump and self.get(index) == BoardBase.E:
                         valid_moves.append((index, None))
                     elif self.get(index) in self.__get_opposite_figs(fig):
                         if self.get_index(from_index, x*2, y*2):
                             jump_index = self.get_index(from_index, x*2, y*2)
-                            # print(Engine.SQUARE_NAMES[jump_index])
-                            if self.get(jump_index) == ".":
+                            if self.get(jump_index) == BoardBase.E:
                                 valid_moves.append((jump_index, index))
 
-        elif fig in ["X", "x"]:
+        elif fig in [BoardBase.WQ, BoardBase.BQ]:
             possible_moves = []
             possible_moves.append([(from_index, i, i) for i in range(1, self.size)])
             possible_moves.append([(from_index, -i, i) for i in range(1, self.size)])
@@ -117,7 +135,7 @@ class Engine:
                 for i, x, y in pos:
                     if self.get_index(i, x, y):
                         index = self.get_index(i, x, y)
-                        if not only_jump and self.get(index) == ".":
+                        if not only_jump and self.get(index) == BoardBase.E:
                             valid_moves.append((index, opposite_fig))
                         elif self.get(index) in self.__get_opposite_figs(fig):
                             if opposite_fig:
@@ -128,7 +146,7 @@ class Engine:
         return valid_moves
 
     def valid_push(self, move, jump=False):
-        valid_moves = self.valid_moves(move.from_index, jump)
+        valid_moves = self.valid_moves_from_index(move.from_index, jump)
         for m, opp in valid_moves:
             # print(m, move.to_index)
             if m == move.to_index:
@@ -145,20 +163,20 @@ class Engine:
 
 
     def force_push(self, move):
-        if self._layout[move.from_index] == ".":
+        if self._layout[move.from_index] == BoardBase.E:
             raise Exception(f"In {move.from_index} field there is no figure.")
         self._layout[move.to_index] = self._layout[move.from_index]
-        self._layout[move.from_index] = "."
-        if move.eat_index: self._layout[move.eat_index] = "."
+        self._layout[move.from_index] = BoardBase.E
+        if move.eat_index: self._layout[move.eat_index] = BoardBase.E
         if move.promotion: self._layout[move.to_index] = self.__get_promotion(self._layout[move.to_index])
 
     def push(self, move):
 
-        if self.turn and self.get(move.from_index) in ["x", "o"]:
+        if self.turn and self.get(move.from_index) in BoardBase.BLACK:
             raise exceptions.InvalidMove(f"{move} is not a valid move.")
-        elif not self.turn and self.get(move.from_index) in ["X", "O"]:
+        elif not self.turn and self.get(move.from_index) in BoardBase.WHITE:
             raise exceptions.InvalidMove(f"{move} is not a valid move.")
-            
+
 #         print("here")
 
         self.valid_push(move)
