@@ -68,7 +68,7 @@ class Board:
 
     def push_move(self, str_move):
         move = Move(str_move)
-        
+        self._engine.push(move)
 
     # def force_move(self, move):
     #     from_index = engine.Engine.SQUARE_NAMES.index(move.from_pos)
@@ -85,19 +85,19 @@ class Board:
     #             self.force_move(move)
 
     def __str__(self):
-        return self._engine
+        return str(self._engine)
 
     def __repr__(self):
         return str(self)
 
 
 # window = Window((500, 500), "neural net engine")
-board = Board()
+# board = Board()
 
-print("Type moves")
-while True:
-    print(board._engine)
-    move = Move(input())
-    board._engine.push(move)
-    # board.force_move(move)
-    # board.force_move(Move("c7c5"))
+# print("Type moves")
+# while True:
+#     print(board._engine)
+#     move = Move(input())
+#     board._engine.push(move)
+#     board.force_move(move)
+#     board.force_move(Move("c7c5"))

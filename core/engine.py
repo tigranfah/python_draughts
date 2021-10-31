@@ -25,6 +25,10 @@ class BoardBase:
                     'a3', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3',
                     'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2',
                     'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1']
+    
+    @staticmethod
+    def get_default_layout():
+        return copy.deepcopy(BoardBase.DEFAULT_LAYOUT)
 
     @staticmethod
     def get_pos(index):
@@ -69,7 +73,7 @@ class Engine:
     def __init__(self, size):
         self.turn = True
         self.size = size
-        self._layout = BoardBase.DEFAULT_LAYOUT
+        self._layout = BoardBase.get_default_layout()
         self._move_stack = []
         # self.board = board
 
@@ -134,7 +138,6 @@ class Engine:
                 if not jump and opp:
                     for j_m in move.jump_index:
                         move = Move.from_indices(move.to_index, j_m)
-                        print(move)
                         self.valid_push(move, True)
                 break
         else:
@@ -151,10 +154,12 @@ class Engine:
 
     def push(self, move):
 
-        if self.turn and self.get(move.from_index) in ["x", "o", "."]:
+        if self.turn and self.get(move.from_index) in ["x", "o"]:
             raise exceptions.InvalidMove(f"{move} is not a valid move.")
-        elif not self.turn and self.get(move.from_index) in ["X", "O", "."]:
+        elif not self.turn and self.get(move.from_index) in ["X", "O"]:
             raise exceptions.InvalidMove(f"{move} is not a valid move.")
+            
+#         print("here")
 
         self.valid_push(move)
         self.turn = not self.turn
