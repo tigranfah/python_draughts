@@ -66,6 +66,10 @@ class Board:
         else:
             print(f"{move} is illegal move.")
 
+    def push_move(self, str_move):
+        move = Move(str_move)
+        
+
     # def force_move(self, move):
     #     from_index = engine.Engine.SQUARE_NAMES.index(move.from_pos)
     #     to_index = engine.Engine.SQUARE_NAMES.index(move.to_pos)
@@ -79,6 +83,12 @@ class Board:
     #         print(engine.Engine.SQUARE_NAMES[m])
     #         if engine.Engine.SQUARE_NAMES.index(move.to_pos) == m:
     #             self.force_move(move)
+
+    def __str__(self):
+        return self._engine
+
+    def __repr__(self):
+        return str(self)
 
 
 # window = Window((500, 500), "neural net engine")
