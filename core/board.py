@@ -1,35 +1,10 @@
-# import pygame
-
-
-# pygame.init()
-
 import sys
-sys.path.insert(0, "./python-chess")
 
 import chess
 
 import engine
 from engine import Move
 from exceptions import SingletonClass
-
-import enum
-
-
-class Figure(enum.Enum):
-
-    K = 0
-    k = 1
-    Q = 2
-    q = 3
-    R = 4
-    r = 5
-    B = 6
-    b = 7
-    N = 8
-    n = 9
-    P = 10
-    p = 11
-
 
 # class Window:
 #
@@ -54,17 +29,19 @@ class Figure(enum.Enum):
 
 class Board:
 
+    NUMBERS = tuple(range(8, 0, -1))
+    DIGITS = tuple("abcdefgh")
+
     def __init__(self):
         self._engine = engine.Engine(8)
 
-    def push(self, move):
-        # out = self._engine.predict(board, move)
-        print(f"Probability {out}")
-        if out > 0.5:
-            self.force_move(move)
-            print(str(self))
-        else:
-            print(f"{move} is illegal move.")
+    # def push(self, move):
+    #     print(f"Probability {out}")
+    #     if out > 0.5:
+    #         self.force_move(move)
+    #         print(str(self))
+    #     else:
+    #         print(f"{move} is illegal move.")
 
     def valid_moves(self):
         return tuple(Move(engine.BoardBase.get_pos(f) + engine.BoardBase.get_pos(t)) for f, t in self._engine.valid_moves())
@@ -73,34 +50,10 @@ class Board:
         move = Move(str_move)
         self._engine.push(move)
 
-    # def force_move(self, move):
-    #     from_index = engine.Engine.SQUARE_NAMES.index(move.from_pos)
-    #     to_index = engine.Engine.SQUARE_NAMES.index(move.to_pos)
-    #     if self._engine.layout[from_index] == ".":
-    #         raise Exception(f"In empty {move.from_pos} field there is no figure.")
-    #     self._engine.layout[to_index] = self._engine.layout[from_index]
-    #     self._engine.layout[from_index] = "."
-    #
-    # def evaluate(self, move):
-    #     for m, opps in self._engine.is_valid(move):
-    #         print(engine.Engine.SQUARE_NAMES[m])
-    #         if engine.Engine.SQUARE_NAMES.index(move.to_pos) == m:
-    #             self.force_move(move)
-
     def __str__(self):
-        return str(self._engine)
+        s = "\n".join([f"{Board.NUMBERS[i]} {' '.join(self._engine.layout[i*8:i*8+8])}" for i in range(8)])
+        s += f"\n  {' '.join(Board.DIGITS)}"
+        return s
 
     def __repr__(self):
         return str(self)
-
-
-# window = Window((500, 500), "neural net engine")
-# board = Board()
-
-# print("Type moves")
-# while True:
-#     print(board._engine)
-#     move = Move(input())
-#     board._engine.push(move)
-#     board.force_move(move)
-#     board.force_move(Move("c7c5"))

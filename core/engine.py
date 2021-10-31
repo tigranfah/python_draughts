@@ -6,7 +6,6 @@
 import os
 import copy
 import sys
-sys.path.insert(0, "./python-chess")
 
 import chess
 
@@ -27,7 +26,7 @@ class BoardBase:
     WHITE = ("O", "X")
     BLACK = ("o", "x")
 
-    DEFAULT_LAYOUT = list(".o.o.o.oo.o.o.o..o.o.o.o.........X......O.O.O.O..O.O.O.OO.O.O.O.")
+    DEFAULT_LAYOUT = list(".o.o.o.oo.o.o.o..o.o.o.o................O.O.O.O..O.O.O.OO.O.O.O.")
     SQUARE_NAMES = ['a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8',
                     'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7',
                     'a6', 'b6', 'c6', 'd6', 'e6', 'f6', 'g6', 'h6',
@@ -151,7 +150,8 @@ class Engine:
             # print(m, move.to_index)
             if m == move.to_index:
                 move.eat_index = opp
-                move.promotion = self.__is_promoted(move.to_index)
+                move.promotion = self.__is_promoted(move.from_index, move.to_index)
+                # print(move.to_index, move.promotion)
                 self.force_push(move)
                 if not jump and opp:
                     for j_m in move.jump_index:
@@ -160,7 +160,6 @@ class Engine:
                 break
         else:
             raise exceptions.InvalidMove(f"{move} is not a valid move.")
-
 
     def force_push(self, move):
         if self._layout[move.from_index] == BoardBase.E:
@@ -210,20 +209,11 @@ class Engine:
             "o" : "x"
         }[fig]
 
-    def __is_promoted(self, index):
-        if not self.get(index) in ["o", "O"]: return False
+    def __is_promoted(self, from_index, index):
+        if not self.get(from_index) in ["o", "O"]: return False
         if 0 <= index < self.size or self.size**2-self.size <= index < self.size**2:
             return True
         return False
-
-    # def __check_turn(self, index):
-    #     if self.turn and self.get(index) in ["o", "x"]:
-
-    def __str__(self):
-        return "\n".join([f"{' '.join(self._layout[i*8:i*8+8])}" for i in range(8)])
-
-    def __repr__(self):
-        return str(self)
 
 
 # def get_model(unit_size):
