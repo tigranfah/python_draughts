@@ -72,7 +72,7 @@ class Move:
         return Move(f"{BoardBase.get_pos(from_ind)}{BoardBase.get_pos(to_ind)}")
 
     def __str__(self):
-        return f"Move('{self.from_pos + self.to_pos}')"
+        return self.from_pos + self.to_pos
 
     def __repr__(self):
         return str(self)

@@ -12,6 +12,17 @@ def multi_eating():
     b.push_move("b4d6 g3")
     print(b)
 
+    # black
+    # b.push_move("e3d4")
+    # b.push_move("d6c5")
+    # b.push_move("g3f4")
+    # b.push_move("c5e3")
+    # b.push_move("e3d4")
+    # b.push_move("h2g3")
+    # b.push_move("b6c5")
+    # b.push_move("g1h2")
+    # b.push_move("e3g1")
+
 
 def multi_eating_queen():
     b = board.Board()

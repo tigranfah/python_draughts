@@ -4,10 +4,10 @@ import numpy as np
 unique_cells = sorted(set("""
 . o . o . o . o
 o . o . o . o .
-. o . o . o . o
+. o . x . o . o
 . . . . . . . .
 . . . . . . . .
-O . O . O . O .
+O . O . X . O .
 . O . O . O . O
 O . O . O . O ."""))
 

@@ -46,13 +46,16 @@ class Board:
     def valid_moves(self):
         return tuple(Move(engine.BoardBase.get_pos(f) + engine.BoardBase.get_pos(t)) for f, t in self._engine.valid_moves())
 
-    def push_move(self, str_move):
+    def push(self, str_move):
         move = Move(str_move)
+        self.push_move(move)
+
+    def push_move(self, move):
         self._engine.push(move)
 
     def __str__(self):
-        s = "\n".join([f"{Board.NUMBERS[i]} {' '.join(self._engine.layout[i*8:i*8+8])}" for i in range(8)])
-        s += f"\n  {' '.join(Board.DIGITS)}"
+        s = "\n".join([f"{' '.join(self._engine.layout[i*8:i*8+8])}" for i in range(8)])
+        # s += f"\n  {' '.join(Board.DIGITS)}"
         return s
 
     def __repr__(self):
