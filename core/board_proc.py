@@ -48,7 +48,6 @@ def board_pos_to_num_pos(b_pos):
 def num_pos_to_board_pos(pos):
     return f"{num_pos_dict[pos[1]]}{8 - pos[0]}"
 
-
 def move_to_output(board, uci_move):
     output = np.zeros(4)
     from_pos = board_pos_to_num_pos(uci_move[:2])

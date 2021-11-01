@@ -1,4 +1,11 @@
 import board
+import engine
+
+import pygame
+
+pygame.init()
+
+import os
 
 
 def multi_eating():
@@ -38,3 +45,109 @@ def multi_eating_queen():
     b.push_move("b6c5")
     b.push_move("f6d8 a5")
     print(b)
+
+
+white = (255, 255, 255)
+black = (0, 0, 0)
+
+class Window:
+
+    __instance = None
+
+    def __init__(self, size, title):
+        if Window.__instance:
+            raise SingletonClass(f"{__class__.__name__} is a singleton class.")
+
+        self.__create_window(size, title)
+
+        self.board = board.Board()
+
+        Window.__instance = self
+
+    def __create_window(self, size, title):
+        self.size = size
+        self.root = pygame.display.set_mode(size)
+        pygame.display.set_caption(title)
+
+        self.field_size = int(size[0] / 8)
+
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+
+        self.W_O = pygame.image.load(os.path.join(dir_path, "res", 'white_o.png'))
+        self.W_X = pygame.image.load(os.path.join(dir_path, "res", 'white_x.png'))
+        self.B_O = pygame.image.load(os.path.join(dir_path, "res", 'black_o.png'))
+        self.B_X = pygame.image.load(os.path.join(dir_path, "res", 'black_x.png'))
+
+        self.W_O = pygame.transform.scale(self.W_O, (self.field_size, self.field_size))
+        self.W_X = pygame.transform.scale(self.W_X, (self.field_size, self.field_size))
+        self.B_O = pygame.transform.scale(self.B_O, (self.field_size, self.field_size))
+        self.B_X = pygame.transform.scale(self.B_X, (self.field_size, self.field_size))
+
+    def run(self):
+        global WHITE
+        global BLACK
+        W = True
+
+        move = []
+
+        while True:
+            for even in pygame.event.get():
+                if even == pygame.QUIT:
+                    break
+                if pygame.mouse.get_pressed()[0]:
+                    x, y = pygame.mouse.get_pos()
+                    x = x // self.field_size
+                    y = y // self.field_size
+                    index = x + y * 8
+                    move.append(index)
+                    if len(move) == 2:
+                        try:
+                            made_move = engine.Move.from_indices(move[0], move[1])
+                            self.board.push_move(made_move)
+                        except Exception as ex:
+                            print(ex)
+                        move = []
+
+
+
+            for i in range(8):
+                for j in range(8):
+                    color = white if W else black
+                    if j != 7: W = not W
+                    pygame.draw.rect(self.root, color, (j * self.field_size, i * self.field_size,
+                                                        (j + 1)*self.field_size, (i + 1)*self.field_size))
+
+            self.draw_figure(self.board._engine.layout)
+
+            pygame.display.flip()
+
+        pygame.quit()
+
+    def draw_figure(self, figs):
+        fig_dict = {
+            "O" : self.W_O,
+            "X" : self.W_X,
+            "o" : self.B_O,
+            "x" : self.B_X
+        }
+
+        for i in range(8):
+            for j in range(8):
+                fig = figs[j + i*8]
+                if fig == ".":
+                    continue
+                df = fig_dict[fig]
+                self.root.blit(df, (j*self.field_size, i*self.field_size))
+
+    @staticmethod
+    def get_instance():
+        return Window.__instance
+
+
+def test_game():
+    win = Window((500, 500), "Fker")
+    win.run()
+
+
+if __name__ == "__main__":
+    test_game()

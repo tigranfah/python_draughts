@@ -6,26 +6,6 @@ import engine
 from engine import Move
 from exceptions import SingletonClass
 
-# class Window:
-#
-#     __instance = None
-#
-#     def __init__(self, size, title):
-#         if Window.__instance:
-#             raise SingletonClass(f"{__class__.__name__} is a singleton class.")
-#
-#         self.__create_window(size, title)
-#
-#         Window.__instance = self
-#
-#     def __create_window(self, size, title):
-#         self.root = pygame.display.set_mode(size)
-#         pygame.display.set_caption(title)
-#
-#     @staticmethod
-#     def get_instance():
-#         return Window.__instance
-
 
 class Board:
 

@@ -216,27 +216,23 @@ class Engine:
         return False
 
 
-# def get_model(unit_size):
-#     model = keras.models.Sequential()
-#     model.add(layers.Dense(256, input_shape=(68, ), activation="relu"))
-#     model.add(layers.Dense(512, activation="relu"))
-#     # model.add(layers.Dense(512, activation="relu"))
-#     # model.add(layers.Dropout(0.3))
-#     model.add(layers.Dense(1024, activation="relu"))
-#     model.add(layers.Dropout(0.3))
-#     model.add(layers.Dense(1024, activation="relu"))
-#     model.add(layers.Dropout(0.3))
-#     # model.add(layers.Dense(512, activation="relu"))
-#     # model.add(layers.Dropout(0.3))
-#     model.add(layers.Dense(256, activation="relu"))
-#     model.add(layers.Dropout(0.3))
+# def get_model(size, d):
+#     model = keras.Sequential()
+#     model.add(layers.Dense(size, input_shape=(68, ), activation="relu"))
+#     model.add(layers.Dense(size*2, activation="relu"))
+#     for _ in range(d):
+#         model.add(layers.Dense(size*2, activation="relu"))
+#         model.add(layers.Dropout(0.3))
+#
 #     model.add(layers.Dense(1, activation="sigmoid"))
 #
 #     model.compile(optimizer="adam",
-#                   loss=keras.losses.BinaryCrossentropy(),
-#                   metrics=["accuracy"])
+#                     loss=keras.losses.MeanSquaredError(),
+#                     metrics=["accuracy"])
+#
+#     model.summary()
 #
 #     return model
-
-# model = get_model(512)
+#
+# model = get_model(256, 3)
 # model.save("models/model")
