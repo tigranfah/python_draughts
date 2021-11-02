@@ -12,8 +12,9 @@ class Board:
     NUMBERS = tuple(range(8, 0, -1))
     DIGITS = tuple("abcdefgh")
 
-    def __init__(self):
+    def __init__(self, net=True):
         self._engine = engine.Engine(8)
+#         self._engine = engine.NetEngine(8)
 
     # def push(self, move):
     #     print(f"Probability {out}")

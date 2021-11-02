@@ -1,7 +1,7 @@
-# import tensorflow as tf
-# import tensorflow.keras as keras
-# import tensorflow.keras.layers as layers
-# import numpy as np
+import tensorflow as tf
+import tensorflow.keras as keras
+import tensorflow.keras.layers as layers
+import numpy as np
 
 import os
 import copy
@@ -78,13 +78,24 @@ class Move:
         return str(self)
 
 
-class Engine:
+class EngineBase:
 
     def __init__(self, size):
         self.turn = True
         self.size = size
         self._layout = BoardBase.get_default_layout()
         self._move_stack = []
+
+
+    @property
+    def layout(self):
+        return self._layout
+
+
+class Engine(EngineBase):
+
+    def __init__(self, size):
+        EngineBase.__init__(self, size)
 
     def valid_moves(self):
         figs = BoardBase.WHITE if self.turn else BoardBase.BLACK
@@ -191,10 +202,6 @@ class Engine:
     def get(self, index, x=0, y=0):
         return self._layout[self.get_index(index, x, y)]
 
-    @property
-    def layout(self):
-        return self._layout
-
     def __get_opposite_figs(self, fig):
         return {
             "O" : ["o", "x"],
@@ -215,6 +222,26 @@ class Engine:
             return True
         return False
 
+
+class NetEngine(EngineBase):
+
+    def __init__(self, size):
+        EngineBase.__init__(self, size)
+        current_path = os.path.dirname(os.path.realpath(__file__))
+        self.model = keras.models.load_model(os.path.join(current_path, "..", "models", "model"))
+        self.model.load_weights(os.path.join(current_path, "..", "models", "weights_256_3.h5"))
+
+    def push(self, move):
+        print("".join(self.layout))
+        inp = bp.board_to_input("".join(self.layout))
+        inp.extend(bp.board_pos_to_num_pos(str(move)[:2]))
+        inp.extend(bp.board_pos_to_num_pos(str(move)[2:]))
+        inp = np.array(inp).astype("float64")
+        inp[:-4] = inp[:-4] / 4
+        inp[-4:] = inp[-4:] / 7
+        # print(inp)
+        pred = self.model.predict(np.array([inp]))
+        print(pred)
 
 # def get_model(size, d):
 #     model = keras.Sequential()

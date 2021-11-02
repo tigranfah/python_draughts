@@ -25,10 +25,8 @@ def fig_to_num(f): return fig_dict[f]
 def num_to_fig(n): return num_dict[n]
 
 
-def board_to_input(board):
-    board = str(board).replace("\n", '').replace(" ", '')
-    board.replace(" ", '')
-    return [fig_to_num(pos) for pos in board]
+def board_to_input(layout):
+    return [fig_to_num(pos) for pos in layout]
 
 
 def input_to_board(inp):

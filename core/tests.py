@@ -6,6 +6,7 @@ import pygame
 pygame.init()
 
 import os
+import re
 
 
 def multi_eating():
@@ -83,32 +84,22 @@ class Window:
         self.B_O = pygame.transform.scale(self.B_O, (self.field_size, self.field_size))
         self.B_X = pygame.transform.scale(self.B_X, (self.field_size, self.field_size))
 
+    # def get_pos_by_click(self):
+    #     x, y = pygame.mouse.get_pos()
+    #     x = x // self.field_size
+    #     y = y // self.field_size
+    #     index = x + y * 8
+    #     return engine.BoardBase.get_pos(index)
+
     def run(self):
         global WHITE
         global BLACK
         W = True
 
-        move = []
-
         while True:
             for even in pygame.event.get():
                 if even == pygame.QUIT:
                     break
-                if pygame.mouse.get_pressed()[0]:
-                    x, y = pygame.mouse.get_pos()
-                    x = x // self.field_size
-                    y = y // self.field_size
-                    index = x + y * 8
-                    move.append(index)
-                    if len(move) == 2:
-                        try:
-                            made_move = engine.Move.from_indices(move[0], move[1])
-                            self.board.push_move(made_move)
-                        except Exception as ex:
-                            print(ex)
-                        move = []
-
-
 
             for i in range(8):
                 for j in range(8):
@@ -120,6 +111,13 @@ class Window:
             self.draw_figure(self.board._engine.layout)
 
             pygame.display.flip()
+
+            move = input()
+            self.board.push(move)
+            # try:
+            #
+            # except Exception as ex:
+            #     print(ex)
 
         pygame.quit()
 
