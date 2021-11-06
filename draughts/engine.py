@@ -1,6 +1,6 @@
 # import tensorflow as tf
 import tensorflow.keras as keras
-# import tensorflow.keras.layers as layers
+import tensorflow.keras.layers as layers
 import numpy as np
 
 from PIL import Image
@@ -8,8 +8,6 @@ from PIL import Image
 import os
 import copy
 import sys
-
-import chess
 
 import exceptions
 import board_proc as bp
@@ -243,13 +241,39 @@ class Engine(EngineBase):
         self.turn = not self.turn
 
 
+def get_conv_model(unit_size, conv_depth):
+    model = keras.models.Sequential()
+    model.add(layers.Conv2D(unit_size, (2, 2), input_shape=(12, 8, 1), activation="relu"))
+    model.add(layers.MaxPooling2D((1, 1)))
+    for i in range(conv_depth):
+      model.add(layers.Conv2D(unit_size, (1, 1), activation="relu"))
+      model.add(layers.Conv2D(unit_size, (1, 1), activation="relu"))
+      model.add(layers.MaxPooling2D((1, 1)))
+    model.add(layers.Flatten())
+    model.add(layers.Dense(unit_size*2, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-8, l2=1e-7)))
+    model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(unit_size, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-8, l2=1e-7)))
+    model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(1, activation="sigmoid"))
+
+    sgd = keras.optimizers.SGD(learning_rate=0.1, momentum=0.0)
+
+    model.compile(loss=keras.losses.MeanSquaredError(),
+                  optimizer="adam",
+                  metrics=["accuracy"])
+
+    return model
+
+
 class NetEngine(EngineBase):
 
     def __init__(self, size):
         EngineBase.__init__(self, size)
         current_path = os.path.dirname(os.path.realpath(__file__))
-        self.model = keras.models.load_model(os.path.join(current_path, "..", "models", "model"))
-        self.model.load_weights(os.path.join(current_path, "..", "models", "conv_weights_512_1.h5"))
+        # print(os.listdir(os.path.join(current_path, "..", "models")))
+        # self.model = keras.models.load_model(os.path.join(current_path, "..", "models", "model"))
+        self.model = get_conv_model(128, 0)
+        self.model.load_weights(os.path.join(current_path, "..", "models", "conv_weights_256_3.h5"))
 
     def push(self, move):
         inp = [bp.fig_to_num(cell) for cell in self._layout]
@@ -264,35 +288,8 @@ class NetEngine(EngineBase):
         pred = self.model.predict(np.array([inp]))[0][0]
         print(pred)
         if pred < 0.5: raise exceptions.InvalidMove(f"{move} is not a valid move.")
-        else: self.force_push(move)
 
 
-# def get_conv_model(unit_size, conv_depth):
-#     model = keras.models.Sequential()
-#     model.add(layers.Conv2D(unit_size, (4, 4), input_shape=(12, 8, 1), activation="relu"))
-#     model.add(layers.MaxPooling2D((1, 1)))
-#     model.add(layers.Conv2D(unit_size, (3, 3), activation="relu"))
-#     model.add(layers.MaxPooling2D((1, 1)))
-#     model.add(layers.Conv2D(unit_size, (2, 2), activation="relu"))
-#     model.add(layers.MaxPooling2D((1, 1)))
-#     for i in range(conv_depth):
-#         model.add(layers.Conv2D(unit_size, (1, 1), activation="relu"))
-#         model.add(layers.Conv2D(unit_size, (1, 1), activation="relu"))
-#         model.add(layers.MaxPooling2D((1, 1)))
-#     model.add(layers.Flatten())
-#     model.add(layers.Dense(unit_size*2, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-6, l2=1e-5)))
-#     model.add(layers.Dropout(0.3))
-#     model.add(layers.Dense(unit_size, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-6, l2=1e-5)))
-#     model.add(layers.Dropout(0.2))
-#     model.add(layers.Dense(1, activation="sigmoid"))
-#
-#     sgd = keras.optimizers.SGD(learning_rate=0.1, momentum=0.0)
-#
-#     model.compile(loss=keras.losses.MeanSquaredError(),
-#                   optimizer="adam",
-#                   metrics=["accuracy"])
-#
-#     return model
 
-# model = get_conv_model(512, 1)
+# model = get_conv_model(128, 0)
 # model.save("models/model")
