@@ -1,3 +1,3 @@
-# python_draughts
+# PythonDraughts
 
-Python draughts is a draughts engine coded with python (python 3).
+**python_draughts** is a draughts engine coded with python (python 3).

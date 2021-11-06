@@ -113,11 +113,10 @@ class Window:
             pygame.display.flip()
 
             move = input()
-            self.board.push(move)
-            # try:
-            #
-            # except Exception as ex:
-            #     print(ex)
+            try:
+                self.board.push(move)
+            except Exception as ex:
+                print(ex)
 
         pygame.quit()
 

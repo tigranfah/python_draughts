@@ -1,7 +1,9 @@
-import tensorflow as tf
+# import tensorflow as tf
 import tensorflow.keras as keras
-import tensorflow.keras.layers as layers
+# import tensorflow.keras.layers as layers
 import numpy as np
+
+from PIL import Image
 
 import os
 import copy
@@ -36,6 +38,18 @@ class BoardBase:
                     'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2',
                     'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1']
 
+    core_path = os.path.dirname(os.path.realpath(__file__))
+
+    BOARD_IMG = Image.open(os.path.join(core_path, "res", 'board.jpg'))
+    BOARD_IMG = BOARD_IMG.resize((BOARD_IMG.size[0]//2, BOARD_IMG.size[1]//2))
+    FIG_SIZE = 29
+    WHITE_O_IMG = Image.open(os.path.join(core_path, "res", 'white_o.png')).resize((FIG_SIZE, FIG_SIZE))
+    WHITE_X_IMG = Image.open(os.path.join(core_path, "res", 'white_x.png')).resize((FIG_SIZE, FIG_SIZE))
+    BLACK_O_IMG = Image.open(os.path.join(core_path, "res", 'black_o.png')).resize((FIG_SIZE, FIG_SIZE))
+    BLACK_X_IMG = Image.open(os.path.join(core_path, "res", 'black_x.png')).resize((FIG_SIZE, FIG_SIZE))
+    FIELD_SIZE_IN_PIXEL = 33
+    BOARD_OFFSET = 12
+
     @staticmethod
     def get_default_layout():
         return copy.deepcopy(BoardBase.DEFAULT_LAYOUT)
@@ -51,6 +65,15 @@ class BoardBase:
         if not pos in BoardBase.SQUARE_NAMES:
             raise exceptions.InvalidPosition(f"{pos} is not a valid board position.")
         return BoardBase.SQUARE_NAMES.index(pos)
+
+    @staticmethod
+    def get_figure_image(figure):
+        return {
+            "O" : BoardBase.WHITE_O_IMG,
+            "X" : BoardBase.WHITE_X_IMG,
+            "o" : BoardBase.BLACK_O_IMG,
+            "x" : BoardBase.BLACK_X_IMG
+        }[figure]
 
 
 class Move:
@@ -86,6 +109,43 @@ class EngineBase:
         self._layout = BoardBase.get_default_layout()
         self._move_stack = []
 
+    def force_push(self, move):
+        if self._layout[move.from_index] == BoardBase.E:
+            raise Exception(f"In {move.from_index} field there is no figure.")
+        self._layout[move.to_index] = self._layout[move.from_index]
+        self._layout[move.from_index] = BoardBase.E
+        if move.eat_index: self._layout[move.eat_index] = BoardBase.E
+        if move.promotion: self._layout[move.to_index] = self.get_promotion(self._layout[move.to_index])
+
+    def get_index(self, index, x=0, y=0):
+        if (index % self.size) + 1 + x <= 0 or (index % self.size) + 1 + x > self.size:
+            return None
+        if self.size - (index // self.size) + y <= 0 or self.size - (index // self.size) + y > self.size:
+            return None
+        return index + x + self.size * -y
+
+    def get(self, index, x=0, y=0):
+        return self._layout[self.get_index(index, x, y)]
+
+    def get_opposite_figs(self, fig):
+        return {
+            "O" : ["o", "x"],
+            "X" : ["o", "x"],
+            "o" : ["O", "X"],
+            "x" : ["O", "X"]
+        }[fig]
+
+    def get_promotion(self, fig):
+        return {
+            "O" : "X",
+            "o" : "x"
+        }[fig]
+
+    def is_promoted(self, from_index, index):
+        if not self.get(from_index) in ["o", "O"]: return False
+        if 0 <= index < self.size or self.size**2-self.size <= index < self.size**2:
+            return True
+        return False
 
     @property
     def layout(self):
@@ -97,12 +157,12 @@ class Engine(EngineBase):
     def __init__(self, size):
         EngineBase.__init__(self, size)
 
-    def valid_moves(self):
+    def valid_moves(self, jump=False):
         figs = BoardBase.WHITE if self.turn else BoardBase.BLACK
         valid_moves = []
         for i in range(self.size**2):
             if self.get(i) in figs:
-                valid_moves.extend([(i, m) for m, o in self.valid_moves_from_index(i)])
+                valid_moves.extend([(i, m) for m, o in self.valid_moves_from_index(i, jump)])
 
         return valid_moves
 
@@ -126,7 +186,7 @@ class Engine(EngineBase):
                     # print(index)
                     if not only_jump and self.get(index) == BoardBase.E:
                         valid_moves.append((index, None))
-                    elif self.get(index) in self.__get_opposite_figs(fig):
+                    elif self.get(index) in self.get_opposite_figs(fig):
                         if self.get_index(from_index, x*2, y*2):
                             jump_index = self.get_index(from_index, x*2, y*2)
                             if self.get(jump_index) == BoardBase.E:
@@ -147,7 +207,7 @@ class Engine(EngineBase):
                         index = self.get_index(i, x, y)
                         if not only_jump and self.get(index) == BoardBase.E:
                             valid_moves.append((index, opposite_fig))
-                        elif self.get(index) in self.__get_opposite_figs(fig):
+                        elif self.get(index) in self.get_opposite_figs(fig):
                             if opposite_fig:
                                 break
                             only_jump = False
@@ -161,7 +221,7 @@ class Engine(EngineBase):
             # print(m, move.to_index)
             if m == move.to_index:
                 move.eat_index = opp
-                move.promotion = self.__is_promoted(move.from_index, move.to_index)
+                move.promotion = self.is_promoted(move.from_index, move.to_index)
                 # print(move.to_index, move.promotion)
                 self.force_push(move)
                 if not jump and opp:
@@ -172,14 +232,6 @@ class Engine(EngineBase):
         else:
             raise exceptions.InvalidMove(f"{move} is not a valid move.")
 
-    def force_push(self, move):
-        if self._layout[move.from_index] == BoardBase.E:
-            raise Exception(f"In {move.from_index} field there is no figure.")
-        self._layout[move.to_index] = self._layout[move.from_index]
-        self._layout[move.from_index] = BoardBase.E
-        if move.eat_index: self._layout[move.eat_index] = BoardBase.E
-        if move.promotion: self._layout[move.to_index] = self.__get_promotion(self._layout[move.to_index])
-
     def push(self, move):
 
         if self.turn and self.get(move.from_index) in BoardBase.BLACK:
@@ -187,40 +239,8 @@ class Engine(EngineBase):
         elif not self.turn and self.get(move.from_index) in BoardBase.WHITE:
             raise exceptions.InvalidMove(f"{move} is not a valid move.")
 
-#         print("here")
-
         self.valid_push(move)
         self.turn = not self.turn
-
-    def get_index(self, index, x=0, y=0):
-        if (index % self.size) + 1 + x <= 0 or (index % self.size) + 1 + x > self.size:
-            return None
-        if self.size - (index // self.size) + y <= 0 or self.size - (index // self.size) + y > self.size:
-            return None
-        return index + x + self.size * -y
-
-    def get(self, index, x=0, y=0):
-        return self._layout[self.get_index(index, x, y)]
-
-    def __get_opposite_figs(self, fig):
-        return {
-            "O" : ["o", "x"],
-            "X" : ["o", "x"],
-            "o" : ["O", "X"],
-            "x" : ["O", "X"]
-        }[fig]
-
-    def __get_promotion(self, fig):
-        return {
-            "O" : "X",
-            "o" : "x"
-        }[fig]
-
-    def __is_promoted(self, from_index, index):
-        if not self.get(from_index) in ["o", "O"]: return False
-        if 0 <= index < self.size or self.size**2-self.size <= index < self.size**2:
-            return True
-        return False
 
 
 class NetEngine(EngineBase):
@@ -229,37 +249,50 @@ class NetEngine(EngineBase):
         EngineBase.__init__(self, size)
         current_path = os.path.dirname(os.path.realpath(__file__))
         self.model = keras.models.load_model(os.path.join(current_path, "..", "models", "model"))
-        self.model.load_weights(os.path.join(current_path, "..", "models", "weights_256_3.h5"))
+        self.model.load_weights(os.path.join(current_path, "..", "models", "conv_weights_512_1.h5"))
 
     def push(self, move):
-        print("".join(self.layout))
-        inp = bp.board_to_input("".join(self.layout))
-        inp.extend(bp.board_pos_to_num_pos(str(move)[:2]))
-        inp.extend(bp.board_pos_to_num_pos(str(move)[2:]))
-        inp = np.array(inp).astype("float64")
-        inp[:-4] = inp[:-4] / 4
-        inp[-4:] = inp[-4:] / 7
+        inp = [bp.fig_to_num(cell) for cell in self._layout]
+        x, y = bp.board_pos_to_num_pos(str(move)[:2])
+        x1, y1 = bp.board_pos_to_num_pos(str(move)[2:])
+        for p in (x, y, x1, y1):
+            base_ = np.zeros(8)
+            base_[p] = 1
+            inp.extend(base_)
+        inp = np.array(inp).astype("float64").reshape(12, 8, -1)
         # print(inp)
-        pred = self.model.predict(np.array([inp]))
+        pred = self.model.predict(np.array([inp]))[0][0]
         print(pred)
+        if pred < 0.5: raise exceptions.InvalidMove(f"{move} is not a valid move.")
+        else: self.force_push(move)
 
-# def get_model(size, d):
-#     model = keras.Sequential()
-#     model.add(layers.Dense(size, input_shape=(68, ), activation="relu"))
-#     model.add(layers.Dense(size*2, activation="relu"))
-#     for _ in range(d):
-#         model.add(layers.Dense(size*2, activation="relu"))
-#         model.add(layers.Dropout(0.3))
-#
+
+# def get_conv_model(unit_size, conv_depth):
+#     model = keras.models.Sequential()
+#     model.add(layers.Conv2D(unit_size, (4, 4), input_shape=(12, 8, 1), activation="relu"))
+#     model.add(layers.MaxPooling2D((1, 1)))
+#     model.add(layers.Conv2D(unit_size, (3, 3), activation="relu"))
+#     model.add(layers.MaxPooling2D((1, 1)))
+#     model.add(layers.Conv2D(unit_size, (2, 2), activation="relu"))
+#     model.add(layers.MaxPooling2D((1, 1)))
+#     for i in range(conv_depth):
+#         model.add(layers.Conv2D(unit_size, (1, 1), activation="relu"))
+#         model.add(layers.Conv2D(unit_size, (1, 1), activation="relu"))
+#         model.add(layers.MaxPooling2D((1, 1)))
+#     model.add(layers.Flatten())
+#     model.add(layers.Dense(unit_size*2, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-6, l2=1e-5)))
+#     model.add(layers.Dropout(0.3))
+#     model.add(layers.Dense(unit_size, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-6, l2=1e-5)))
+#     model.add(layers.Dropout(0.2))
 #     model.add(layers.Dense(1, activation="sigmoid"))
 #
-#     model.compile(optimizer="adam",
-#                     loss=keras.losses.MeanSquaredError(),
-#                     metrics=["accuracy"])
+#     sgd = keras.optimizers.SGD(learning_rate=0.1, momentum=0.0)
 #
-#     model.summary()
+#     model.compile(loss=keras.losses.MeanSquaredError(),
+#                   optimizer="adam",
+#                   metrics=["accuracy"])
 #
 #     return model
-#
-# model = get_model(256, 3)
+
+# model = get_conv_model(512, 1)
 # model.save("models/model")

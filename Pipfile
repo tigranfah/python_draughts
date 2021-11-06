@@ -7,6 +7,7 @@ name = "pypi"
 flask = "*"
 tensorflow = "*"
 kivy = "*"
+pillow = "*"
 
 [dev-packages]
 
