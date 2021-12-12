@@ -1,57 +1,51 @@
 import numpy as np
+import tensorflow.keras as keras
+import tensorflow.keras.layers as layers
+import pickle
 
 
-class Activation:
+def get_conv_model(unit_size, conv_depth):
+    model = keras.models.Sequential()
+    model.add(layers.Conv2D(unit_size, (2, 2), input_shape=(12, 8, 1), activation="relu"))
+    model.add(layers.MaxPooling2D((1, 1)))
+    for i in range(conv_depth):
+      model.add(layers.Conv2D(unit_size, (1, 1), activation="relu"))
+      model.add(layers.Conv2D(unit_size, (1, 1), activation="relu"))
+      model.add(layers.MaxPooling2D((1, 1)))
+    model.add(layers.Flatten())
+    model.add(layers.Dense(unit_size*2, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-8, l2=1e-7)))
+    model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(unit_size, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-8, l2=1e-7)))
+    model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(1, activation="sigmoid"))
 
-    @staticmethod
-    def relu(x):
-        return np.vectorise(lambda x : max(0, x))
+    sgd = keras.optimizers.SGD(learning_rate=0.1, momentum=0.0)
 
-    @staticmethod
-    def sigmoid():
-        return np.vectorise(lambda x : 1 / (1 + np.exp(-x)))
+    model.compile(loss=keras.losses.MeanSquaredError(),
+                  optimizer="adam",
+                  metrics=["accuracy"])
 
-
-class Layer:
-
-    def __init__(self, sunit_size, activation):
-        self.unit_size = unit_size
-        self.activation = activation
-
-        self.W = np.empty(0)
-        self.b = np.empty(0)
-
-    def forward(self, X):
-        return self.activation(np.dot(self.W, X) + self.b)
-
-    @property
-    def W(self):
-        return self.W
-
-    @W.setter
-    def W(self, W):
-        self.W = W
-
-    @property
-    def b(self):
-        return self.b
-
-    @b.setter
-    def b(self, b):
-        self.b = b
+    return model
 
 
-class Network:
+model = get_conv_model(128, 0)
+model.load_weights("models/conv_weights_256_3.h5")
 
-    def __init__(self, input_shape):
-        self.layers = []
-        # self.layers = [
-        #     Layer(input_shape, Activation.relu),
-        #     Layer()]
+with open("models/weights.pickle", "wb") as file:
+    pickle.dump(model.get_weights(), file)
+# for i in model.get_weights():
+#     print(i.shape)
 
-    def forward(self, X):
-        a = X
-        for layer in self.layers:
-            a = layer.forward(a)
 
-        return a
+# class CNN:
+#
+#     def __init__(self, input_shape):
+#
+#         self._input_shape = input_shape
+#         self.W =
+#         self.B =
+#         self.filters
+
+    #     self._conv_layers()
+    #
+    # def conv_layers

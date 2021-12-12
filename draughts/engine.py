@@ -39,14 +39,14 @@ class BoardBase:
     core_path = os.path.dirname(os.path.realpath(__file__))
 
     BOARD_IMG = Image.open(os.path.join(core_path, "res", 'board.jpg'))
-    BOARD_IMG = BOARD_IMG.resize((BOARD_IMG.size[0]//2, BOARD_IMG.size[1]//2))
-    FIG_SIZE = 29
+    BOARD_IMG = BOARD_IMG.resize((int(BOARD_IMG.size[0]//1.5), int(BOARD_IMG.size[1]//1.5)))
+    FIG_SIZE = 37
     WHITE_O_IMG = Image.open(os.path.join(core_path, "res", 'white_o.png')).resize((FIG_SIZE, FIG_SIZE))
     WHITE_X_IMG = Image.open(os.path.join(core_path, "res", 'white_x.png')).resize((FIG_SIZE, FIG_SIZE))
     BLACK_O_IMG = Image.open(os.path.join(core_path, "res", 'black_o.png')).resize((FIG_SIZE, FIG_SIZE))
     BLACK_X_IMG = Image.open(os.path.join(core_path, "res", 'black_x.png')).resize((FIG_SIZE, FIG_SIZE))
-    FIELD_SIZE_IN_PIXEL = 33
-    BOARD_OFFSET = 12
+    FIELD_SIZE_IN_PIXEL = 44
+    BOARD_OFFSET = 17
 
     @staticmethod
     def get_default_layout():
@@ -243,20 +243,19 @@ class Engine(EngineBase):
 
 def get_conv_model(unit_size, conv_depth):
     model = keras.models.Sequential()
-    model.add(layers.Conv2D(unit_size, (2, 2), input_shape=(12, 8, 1), activation="relu"))
+    model.add(layers.Conv2D(unit_size*2, (4, 4), input_shape=(12, 8, 4), activation="relu"))
     model.add(layers.MaxPooling2D((1, 1)))
-    for i in range(conv_depth):
-      model.add(layers.Conv2D(unit_size, (1, 1), activation="relu"))
-      model.add(layers.Conv2D(unit_size, (1, 1), activation="relu"))
-      model.add(layers.MaxPooling2D((1, 1)))
+    # for i in range(conv_depth):
+    model.add(layers.Conv2D(unit_size, (2, 2), activation="relu"))
+    model.add(layers.MaxPooling2D((1, 1)))
+    model.add(layers.Conv2D(unit_size, (2, 2), activation="relu"))
+    model.add(layers.MaxPooling2D((1, 1)))
     model.add(layers.Flatten())
-    model.add(layers.Dense(unit_size*2, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-8, l2=1e-7)))
-    model.add(layers.Dropout(0.3))
-    model.add(layers.Dense(unit_size, activation="relu", kernel_regularizer=keras.regularizers.l1_l2(l1=1e-8, l2=1e-7)))
-    model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(unit_size, activation="relu"))
+    model.add(layers.Dropout(0.2))
+    model.add(layers.Dense(unit_size, activation="relu"))
+    model.add(layers.Dropout(0.2))
     model.add(layers.Dense(1, activation="sigmoid"))
-
-    sgd = keras.optimizers.SGD(learning_rate=0.1, momentum=0.0)
 
     model.compile(loss=keras.losses.MeanSquaredError(),
                   optimizer="adam",
@@ -272,10 +271,11 @@ class NetEngine(EngineBase):
         current_path = os.path.dirname(os.path.realpath(__file__))
         # print(os.listdir(os.path.join(current_path, "..", "models")))
         # self.model = keras.models.load_model(os.path.join(current_path, "..", "models", "model"))
-        self.model = get_conv_model(128, 0)
-        self.model.load_weights(os.path.join(current_path, "..", "models", "conv_weights_256_3.h5"))
+        self.th = 0.7
+        self.model = get_conv_model(64, 1)
+        self.model.load_weights(os.path.join(current_path, "..", "models", "conv_weights_64.h5"))
 
-    def push(self, move):
+    def validate(self, move):
         inp = [bp.fig_to_num(cell) for cell in self._layout]
         x, y = bp.board_pos_to_num_pos(str(move)[:2])
         x1, y1 = bp.board_pos_to_num_pos(str(move)[2:])
@@ -283,13 +283,39 @@ class NetEngine(EngineBase):
             base_ = np.zeros(8)
             base_[p] = 1
             inp.extend(base_)
-        inp = np.array(inp).astype("float64").reshape(12, 8, -1)
-        # print(inp)
-        pred = self.model.predict(np.array([inp]))[0][0]
-        print(pred)
-        if pred < 0.5: raise exceptions.InvalidMove(f"{move} is not a valid move.")
 
+        inp = np.array(inp).astype("int").reshape(12, 8, -1)
+        # print(inp.flatten())
+        new_input = []
+        for num in inp.flatten():
+            base_4 = np.zeros(4)
+            if num != 0:
+                base_4[num-1] = 1
+            new_input.append(base_4)
 
+        new_input = np.array(new_input).reshape(12, 8, 4)
+
+        return self.model.predict(np.array([new_input]))[0][0]
+
+    def push(self, move):
+        pred = self.validate(move)
+        if pred < self.th: raise exceptions.InvalidMove(f"{move} is not a valid move.")
+        valid_moves = Engine.valid_moves_from_index(self, move.from_index, False)
+        _, opp = [m for m in valid_moves if move.to_index == m[0]][0]
+
+        move.eat_index = opp
+        move.promotion = self.is_promoted(move.from_index, move.to_index)
+
+        self.force_push(move)
+
+    def valid_moves_from_index(self, from_index, jump=False):
+        valid_moves = []
+        for pos in BoardBase.SQUARE_NAMES:
+            pred = self.validate(BoardBase.get_pos(from_index) + pos)
+            if pred > self.th:
+                valid_moves.append((Move.from_indices(from_index, BoardBase.get_index(pos)), pred))
+
+        return valid_moves
 
 # model = get_conv_model(128, 0)
 # model.save("models/model")
