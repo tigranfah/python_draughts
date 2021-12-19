@@ -1,8 +1,3 @@
-# import tensorflow as tf
-import tensorflow.keras as keras
-import tensorflow.keras.layers as layers
-import numpy as np
-
 from PIL import Image
 
 import os
@@ -10,7 +5,31 @@ import copy
 import sys
 
 import exceptions
-import board_proc as bp
+
+
+class Move:
+
+    def __init__(self, str_move, eat_index=None, promotion=False):
+        if not type(str_move) is str: raise ValueError(f"{str_move} must be a string.")
+        if len(str_move) < 4: raise ValueError(f"{str_move} must have at least 4 character.")
+        self.from_pos = str_move[:2]
+        self.to_pos = str_move[2:4]
+        self.jump_pos = str_move[4:].split()
+        self.from_index = BoardBase.get_index(self.from_pos)
+        self.to_index = BoardBase.get_index(self.to_pos)
+        self.jump_index = [BoardBase.get_index(m) for m in self.jump_pos]
+        self.eat_index = eat_index
+        self.promotion = promotion
+
+    @staticmethod
+    def from_indices(from_ind, to_ind):
+        return Move(f"{BoardBase.get_pos(from_ind)}{BoardBase.get_pos(to_ind)}")
+
+    def __str__(self):
+        return "Move( " + self.from_pos + self.to_pos + " )"
+
+    def __repr__(self):
+        return str(self)
 
 
 class BoardBase:
@@ -74,31 +93,6 @@ class BoardBase:
         }[figure]
 
 
-class Move:
-
-    def __init__(self, str_move, eat_index=None, promotion=False):
-        if not type(str_move) is str: raise ValueError(f"{str_move} must be a string.")
-        if len(str_move) < 4: raise ValueError(f"{str_move} must have at least 4 character.")
-        self.from_pos = str_move[:2]
-        self.to_pos = str_move[2:4]
-        self.jump_pos = str_move[4:].split()
-        self.from_index = BoardBase.get_index(self.from_pos)
-        self.to_index = BoardBase.get_index(self.to_pos)
-        self.jump_index = [BoardBase.get_index(m) for m in self.jump_pos]
-        self.eat_index = eat_index
-        self.promotion = promotion
-
-    @staticmethod
-    def from_indices(from_ind, to_ind):
-        return Move(f"{BoardBase.get_pos(from_ind)}{BoardBase.get_pos(to_ind)}")
-
-    def __str__(self):
-        return self.from_pos + self.to_pos
-
-    def __repr__(self):
-        return str(self)
-
-
 class EngineBase:
 
     def __init__(self, size):
@@ -127,20 +121,20 @@ class EngineBase:
 
     def get_opposite_figs(self, fig):
         return {
-            "O" : ["o", "x"],
-            "X" : ["o", "x"],
-            "o" : ["O", "X"],
-            "x" : ["O", "X"]
+            BoardBase.W : BoardBase.BLACK,
+            BoardBase.WQ : BoardBase.BLACK,
+            BoardBase.B : BoardBase.WHITE,
+            BoardBase.BQ : BoardBase.WHITE
         }[fig]
 
     def get_promotion(self, fig):
         return {
-            "O" : "X",
-            "o" : "x"
+            BoardBase.W : BoardBase.WQ,
+            BoardBase.B : BoardBase.BQ
         }[fig]
 
     def is_promoted(self, from_index, index):
-        if not self.get(from_index) in ["o", "O"]: return False
+        if not self.get(from_index) in [BoardBase.W, BoardBase.B]: return False
         if 0 <= index < self.size or self.size**2-self.size <= index < self.size**2:
             return True
         return False
@@ -157,14 +151,17 @@ class Engine(EngineBase):
 
     def valid_moves(self, jump=False):
         figs = BoardBase.WHITE if self.turn else BoardBase.BLACK
+        all_moves = []
         valid_moves = []
         for i in range(self.size**2):
             if self.get(i) in figs:
-                valid_moves.extend([(i, m) for m, o in self.valid_moves_from_index(i, jump)])
+                for move in self.valid_moves_from_pos(BoardBase.get_pos(i), jump):
+                    if move.eat_index: valid_moves.append(move)
+                    all_moves.append(move)
+        return valid_moves if valid_moves else all_moves
 
-        return valid_moves
-
-    def valid_moves_from_index(self, from_index, jump=False):
+    def valid_moves_from_pos(self, from_pos, jump=False):
+        from_index = BoardBase.get_index(from_pos)
         fig = self.get(from_index)
         valid_moves = []
         only_jump = jump
@@ -183,12 +180,14 @@ class Engine(EngineBase):
                     index = self.get_index(i, x, y)
                     # print(index)
                     if not only_jump and self.get(index) == BoardBase.E:
-                        valid_moves.append((index, None))
+                        valid_moves.append(Move(from_pos+BoardBase.get_pos(index), None,
+                                                self.is_promoted(from_index, index)))
                     elif self.get(index) in self.get_opposite_figs(fig):
                         if self.get_index(from_index, x*2, y*2):
                             jump_index = self.get_index(from_index, x*2, y*2)
                             if self.get(jump_index) == BoardBase.E:
-                                valid_moves.append((jump_index, index))
+                                valid_moves.append(Move(from_pos+BoardBase.get_pos(jump_index), index,
+                                                        self.is_promoted(from_index, jump_index)))
 
         elif fig in [BoardBase.WQ, BoardBase.BQ]:
             possible_moves = []
@@ -204,7 +203,9 @@ class Engine(EngineBase):
                     if self.get_index(i, x, y):
                         index = self.get_index(i, x, y)
                         if not only_jump and self.get(index) == BoardBase.E:
-                            valid_moves.append((index, opposite_fig))
+                            valid_moves.append(Move(from_pos+BoardBase.get_pos(index), opposite_fig,
+                                                    self.is_promoted(from_index, index)))
+
                         elif self.get(index) in self.get_opposite_figs(fig):
                             if opposite_fig:
                                 break
@@ -214,18 +215,15 @@ class Engine(EngineBase):
         return valid_moves
 
     def valid_push(self, move, jump=False):
-        valid_moves = self.valid_moves_from_index(move.from_index, jump)
-        for m, opp in valid_moves:
-            # print(m, move.to_index)
-            if m == move.to_index:
-                move.eat_index = opp
-                move.promotion = self.is_promoted(move.from_index, move.to_index)
-                # print(move.to_index, move.promotion)
-                self.force_push(move)
-                if not jump and opp:
+        valid_moves = self.valid_moves(jump)
+        for m in valid_moves:
+            if m.from_index == move.from_index and m.to_index == move.to_index:
+                self.force_push(m)
+                # print(m.jump_index)
+                if not jump and m.eat_index:
                     for j_m in move.jump_index:
-                        move = Move.from_indices(move.to_index, j_m)
-                        self.valid_push(move, True)
+                        m = Move.from_indices(m.to_index, j_m)
+                        self.valid_push(m, True)
                 break
         else:
             raise exceptions.InvalidMove(f"{move} is not a valid move.")
@@ -239,83 +237,3 @@ class Engine(EngineBase):
 
         self.valid_push(move)
         self.turn = not self.turn
-
-
-def get_conv_model(unit_size, conv_depth):
-    model = keras.models.Sequential()
-    model.add(layers.Conv2D(unit_size*2, (4, 4), input_shape=(12, 8, 4), activation="relu"))
-    model.add(layers.MaxPooling2D((1, 1)))
-    # for i in range(conv_depth):
-    model.add(layers.Conv2D(unit_size, (2, 2), activation="relu"))
-    model.add(layers.MaxPooling2D((1, 1)))
-    model.add(layers.Conv2D(unit_size, (2, 2), activation="relu"))
-    model.add(layers.MaxPooling2D((1, 1)))
-    model.add(layers.Flatten())
-    model.add(layers.Dense(unit_size, activation="relu"))
-    model.add(layers.Dropout(0.2))
-    model.add(layers.Dense(unit_size, activation="relu"))
-    model.add(layers.Dropout(0.2))
-    model.add(layers.Dense(1, activation="sigmoid"))
-
-    model.compile(loss=keras.losses.MeanSquaredError(),
-                  optimizer="adam",
-                  metrics=["accuracy"])
-
-    return model
-
-
-class NetEngine(EngineBase):
-
-    def __init__(self, size):
-        EngineBase.__init__(self, size)
-        current_path = os.path.dirname(os.path.realpath(__file__))
-        # print(os.listdir(os.path.join(current_path, "..", "models")))
-        # self.model = keras.models.load_model(os.path.join(current_path, "..", "models", "model"))
-        self.th = 0.7
-        self.model = get_conv_model(64, 1)
-        self.model.load_weights(os.path.join(current_path, "..", "models", "conv_weights_64.h5"))
-
-    def validate(self, move):
-        inp = [bp.fig_to_num(cell) for cell in self._layout]
-        x, y = bp.board_pos_to_num_pos(str(move)[:2])
-        x1, y1 = bp.board_pos_to_num_pos(str(move)[2:])
-        for p in (x, y, x1, y1):
-            base_ = np.zeros(8)
-            base_[p] = 1
-            inp.extend(base_)
-
-        inp = np.array(inp).astype("int").reshape(12, 8, -1)
-        # print(inp.flatten())
-        new_input = []
-        for num in inp.flatten():
-            base_4 = np.zeros(4)
-            if num != 0:
-                base_4[num-1] = 1
-            new_input.append(base_4)
-
-        new_input = np.array(new_input).reshape(12, 8, 4)
-
-        return self.model.predict(np.array([new_input]))[0][0]
-
-    def push(self, move):
-        pred = self.validate(move)
-        if pred < self.th: raise exceptions.InvalidMove(f"{move} is not a valid move.")
-        valid_moves = Engine.valid_moves_from_index(self, move.from_index, False)
-        _, opp = [m for m in valid_moves if move.to_index == m[0]][0]
-
-        move.eat_index = opp
-        move.promotion = self.is_promoted(move.from_index, move.to_index)
-
-        self.force_push(move)
-
-    def valid_moves_from_index(self, from_index, jump=False):
-        valid_moves = []
-        for pos in BoardBase.SQUARE_NAMES:
-            pred = self.validate(BoardBase.get_pos(from_index) + pos)
-            if pred > self.th:
-                valid_moves.append((Move.from_indices(from_index, BoardBase.get_index(pos)), pred))
-
-        return valid_moves
-
-# model = get_conv_model(128, 0)
-# model.save("models/model")

@@ -7,5 +7,5 @@ sys.path.insert(0, core_path)
 
 from board import *
 import engine
-import board_proc
+import preprocessing
 import exceptions
