@@ -3,8 +3,16 @@ from PIL import Image
 import os
 import copy
 import sys
+import enum
 
 import exceptions
+
+
+class GameState(enum.Enum):
+
+    WHITE_WON = 1
+    BLACK_WON = 2
+    INDETERMINATE = 3
 
 
 class Move:
@@ -96,10 +104,14 @@ class BoardBase:
 class EngineBase:
 
     def __init__(self, size):
-        self.turn = True
         self.size = size
+        self.__init_engine()
+
+    def __init_engine(self):
+        self.turn = True
         self._layout = BoardBase.get_default_layout()
         self._move_stack = []
+        self._fig_count = self.get_figure_count()
 
     def force_push(self, move):
         if self._layout[move.from_index] == BoardBase.E:
@@ -138,6 +150,9 @@ class EngineBase:
         if 0 <= index < self.size or self.size**2-self.size <= index < self.size**2:
             return True
         return False
+
+    def reset(self):
+        self.__init_engine()
 
     @property
     def layout(self):
@@ -237,3 +252,29 @@ class Engine(EngineBase):
 
         self.valid_push(move)
         self.turn = not self.turn
+        self._fig_count = self.get_figure_count()
+
+    def get_figure_count(self):
+        fig_count = {}
+        for cell in self._layout:
+            if fig_count.get(cell) == None:
+                fig_count[cell] = 1
+                continue
+            fig_count[cell] += 1
+
+        return fig_count
+
+    def is_draw(self):
+        if self._fig_count.get(BoardBase.WQ) == 1 and self._fig_count.get(BoardBase.BQ) == 1:
+            for move in self.valid_moves():
+                if move.eat_index != None:
+                    return True
+        return False
+
+    def is_finished(self):
+        if self._fig_count.get(BoardBase.B) == None and self._fig_count.get(BoardBase.BQ) == None:
+            return GameState.WHITE_WON
+        elif self._fig_count.get(BoardBase.W) == None and self._fig_count.get(BoardBase.WQ) == None:
+            return GameState.BLACK_WON
+
+        return GameState.INDETERMINATE
