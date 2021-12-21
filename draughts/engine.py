@@ -111,7 +111,8 @@ class EngineBase:
         self.turn = True
         self._layout = BoardBase.get_default_layout()
         self._move_stack = []
-        self._fig_count = self.get_figure_count()
+        self._fig_count = {}
+        self.update_figure_count()
 
     def force_push(self, move):
         if self._layout[move.from_index] == BoardBase.E:
@@ -252,29 +253,32 @@ class Engine(EngineBase):
 
         self.valid_push(move)
         self.turn = not self.turn
-        self._fig_count = self.get_figure_count()
+        self.update_figure_count()
 
-    def get_figure_count(self):
-        fig_count = {}
+    def update_figure_count(self):
+        self._fig_count = {BoardBase.W : 0, BoardBase.B : 0,
+                           BoardBase.WQ : 0, BoardBase.BQ : 0,
+                           BoardBase.E : 0 }
         for cell in self._layout:
-            if fig_count.get(cell) == None:
-                fig_count[cell] = 1
-                continue
-            fig_count[cell] += 1
+            if self._fig_count[cell] == 0:
+                self._fig_count[cell] = 1
+            else:
+                self._fig_count[cell] += 1
 
-        return fig_count
+    def evaluate(self):
+        return self._fig_count[BoardBase.W] - self._fig_count[BoardBase.B] + 3 * (self._fig_count[BoardBase.WQ] - self._fig_count[BoardBase.BQ])
 
     def is_draw(self):
-        if self._fig_count.get(BoardBase.WQ) == 1 and self._fig_count.get(BoardBase.BQ) == 1:
+        if self._fig_count[BoardBase.WQ] == 1 and self._fig_count[BoardBase.BQ] == 1:
             for move in self.valid_moves():
                 if move.eat_index != None:
                     return True
         return False
 
     def is_finished(self):
-        if self._fig_count.get(BoardBase.B) == None and self._fig_count.get(BoardBase.BQ) == None:
+        if self._fig_count[BoardBase.B] == 0 and self._fig_count[BoardBase.BQ] == 0:
             return GameState.WHITE_WON
-        elif self._fig_count.get(BoardBase.W) == None and self._fig_count.get(BoardBase.WQ) == None:
+        elif self._fig_count[BoardBase.W] == 0 and self._fig_count[BoardBase.WQ] == 0:
             return GameState.BLACK_WON
 
         return GameState.INDETERMINATE
