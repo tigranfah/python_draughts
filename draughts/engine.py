@@ -158,6 +158,10 @@ class EngineBase:
     @property
     def layout(self):
         return self._layout
+    
+    @layout.setter
+    def layout(self, lay):
+        self._layout = lay
 
 
 class Engine(EngineBase):
@@ -276,6 +280,9 @@ class Engine(EngineBase):
         return False
 
     def is_finished(self):
+        if len(self.valid_moves()) == 0:
+            if self.turn: return GameState.BLACK_WON
+            elif not self.turn: return GameState.WHITE_WON
         if self._fig_count[BoardBase.B] == 0 and self._fig_count[BoardBase.BQ] == 0:
             return GameState.WHITE_WON
         elif self._fig_count[BoardBase.W] == 0 and self._fig_count[BoardBase.WQ] == 0:
