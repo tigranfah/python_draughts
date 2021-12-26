@@ -19,12 +19,13 @@ class Board:
     def valid_moves(self):
         return tuple(self._engine.valid_moves())
 
-    def push(self, str_move):
-        move = Move(str_move)
-        self.push_move(move)
+    def push(self, *str_moves):
+        for str_move in str_moves:
+            self.push_move(Move(str_move))
 
-    def push_move(self, move):
-        self._engine.push(move)
+    def push_move(self, *moves):
+        for m in moves:
+            self._engine.push(m)
 
     @property
     def engine(self):

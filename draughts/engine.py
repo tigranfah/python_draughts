@@ -19,21 +19,45 @@ class Move:
 
     def __init__(self, str_move, eat_index=None, promotion=False):
         if not type(str_move) is str: raise ValueError(f"{str_move} must be a string.")
-        if len(str_move) < 4: raise ValueError(f"{str_move} must have at least 4 character.")
-        self.from_pos = str_move[:2]
-        self.to_pos = str_move[2:4]
-        self.jump_pos = str_move[4:].split()
-        self.from_index = BoardBase.get_index(self.from_pos)
-        self.to_index = BoardBase.get_index(self.to_pos)
-        self.jump_index = [BoardBase.get_index(m) for m in self.jump_pos]
+
+        if str_move == "":
+            self.empty = True
+        else:
+            self.empty = False
+
+        if not self.empty and len(str_move) != 4: raise ValueError(f"{str_move} must have 4 character.")
+
+        # position info
+
+        if self.empty:
+            self.from_pos = ""
+            self.to_pos = ""
+            self.from_index = None
+            self.to_index = None
+        else:
+            self.from_pos = str_move[0:2]
+            self.to_pos = str_move[2:4]
+            self.from_index = BoardBase.get_index(self.from_pos)
+            self.to_index = BoardBase.get_index(self.to_pos)
+
+        # eat info
         self.eat_index = eat_index
+        self.eatten_fig = None
+
+        # promotion info
         self.promotion = promotion
 
     @staticmethod
     def from_indices(from_ind, to_ind):
         return Move(f"{BoardBase.get_pos(from_ind)}{BoardBase.get_pos(to_ind)}")
 
+    def __eq__(self, other):
+        if self.from_pos == other.from_pos and self.to_pos == other.to_pos:
+            return True
+        return False
+
     def __str__(self):
+        if self.empty: return "Move( '' )"
         return "Move( " + self.from_pos + self.to_pos + " )"
 
     def __repr__(self):
@@ -115,12 +139,15 @@ class EngineBase:
         self.update_figure_count()
 
     def force_push(self, move):
-        if self._layout[move.from_index] == BoardBase.E:
-            raise Exception(f"In {move.from_index} field there is no figure.")
+        if move.empty: return
+
         self._layout[move.to_index] = self._layout[move.from_index]
         self._layout[move.from_index] = BoardBase.E
-        if move.eat_index: self._layout[move.eat_index] = BoardBase.E
+        if move.eat_index:
+            move.eatten_fig = self._layout[move.eat_index]
+            self._layout[move.eat_index] = BoardBase.E
         if move.promotion: self._layout[move.to_index] = self.get_promotion(self._layout[move.to_index])
+        self._move_stack.append(move)
 
     def get_index(self, index, x=0, y=0):
         if (index % self.size) + 1 + x <= 0 or (index % self.size) + 1 + x > self.size:
@@ -143,7 +170,9 @@ class EngineBase:
     def get_promotion(self, fig):
         return {
             BoardBase.W : BoardBase.WQ,
-            BoardBase.B : BoardBase.BQ
+            BoardBase.B : BoardBase.BQ,
+            BoardBase.WQ : BoardBase.W,
+            BoardBase.BQ : BoardBase.B
         }[fig]
 
     def is_promoted(self, from_index, index):
@@ -158,7 +187,7 @@ class EngineBase:
     @property
     def layout(self):
         return self._layout
-    
+
     @layout.setter
     def layout(self, lay):
         self._layout = lay
@@ -168,8 +197,9 @@ class Engine(EngineBase):
 
     def __init__(self, size):
         EngineBase.__init__(self, size)
+        self._current_valid_moves = self.get_valid_moves()
 
-    def valid_moves(self, jump=False):
+    def get_valid_moves(self, jump=False):
         figs = BoardBase.WHITE if self.turn else BoardBase.BLACK
         all_moves = []
         valid_moves = []
@@ -234,29 +264,29 @@ class Engine(EngineBase):
 
         return valid_moves
 
-    def valid_push(self, move, jump=False):
-        valid_moves = self.valid_moves(jump)
-        for m in valid_moves:
-            if m.from_index == move.from_index and m.to_index == move.to_index:
+    def valid_push(self, move):
+
+        if not move.empty:
+            if self.turn and self.get(move.from_index) in BoardBase.BLACK:
+                raise exceptions.InvalidMove(f"{move} is not a valid move.")
+            elif not self.turn and self.get(move.from_index) in BoardBase.WHITE:
+                raise exceptions.InvalidMove(f"{move} is not a valid move.")
+
+        for m in self._current_valid_moves:
+            if m == move:
                 self.force_push(m)
-                # print(m.jump_index)
-                if not jump and m.eat_index:
-                    for j_m in move.jump_index:
-                        m = Move.from_indices(m.to_index, j_m)
-                        self.valid_push(m, True)
+                if not m.eat_index is None and self.valid_moves_from_pos(move.to_pos, True):
+                    self._current_valid_moves = [Move(""), *self.valid_moves_from_pos(move.to_pos, True)]
+                else:
+                    self.turn = not self.turn
+                    self._current_valid_moves = self.get_valid_moves(False)
                 break
         else:
             raise exceptions.InvalidMove(f"{move} is not a valid move.")
 
     def push(self, move):
 
-        if self.turn and self.get(move.from_index) in BoardBase.BLACK:
-            raise exceptions.InvalidMove(f"{move} is not a valid move.")
-        elif not self.turn and self.get(move.from_index) in BoardBase.WHITE:
-            raise exceptions.InvalidMove(f"{move} is not a valid move.")
-
         self.valid_push(move)
-        self.turn = not self.turn
         self.update_figure_count()
 
     def update_figure_count(self):
@@ -289,3 +319,15 @@ class Engine(EngineBase):
             return GameState.BLACK_WON
 
         return GameState.INDETERMINATE
+
+    def valid_moves(self):
+        return self._current_valid_moves
+
+
+# class AIMovePicker:
+#
+#     def __init__(self, board):
+#         self._board = board
+#
+#     def grid_search(self):
+#         for self.board.valid_moves():
