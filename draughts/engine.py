@@ -147,7 +147,18 @@ class EngineBase:
             move.eatten_fig = self._layout[move.eat_index]
             self._layout[move.eat_index] = BoardBase.E
         if move.promotion: self._layout[move.to_index] = self.get_promotion(self._layout[move.to_index])
-        self._move_stack.append(move)
+
+    def force_undo(self, move):
+        if move.empty: return
+
+        if move.promotion:
+            self._layout[move.to_index] = self.get_promotion(self._layout[move.to_index])
+
+        self._layout[move.from_index] = self._layout[move.to_index]
+        self._layout[move.to_index] = BoardBase.E
+
+        if move.eat_index:
+            self._layout[move.eat_index] = move.eatten_fig
 
     def get_index(self, index, x=0, y=0):
         if (index % self.size) + 1 + x <= 0 or (index % self.size) + 1 + x > self.size:
@@ -275,6 +286,8 @@ class Engine(EngineBase):
         for m in self._current_valid_moves:
             if m == move:
                 self.force_push(m)
+                self.add_to_move_stack(m)
+
                 if not m.eat_index is None and self.valid_moves_from_pos(move.to_pos, True):
                     self._current_valid_moves = [Move(""), *self.valid_moves_from_pos(move.to_pos, True)]
                 else:
@@ -283,6 +296,11 @@ class Engine(EngineBase):
                 break
         else:
             raise exceptions.InvalidMove(f"{move} is not a valid move.")
+
+    def undo(self):
+        for move in self._move_stack[-1][::-1]:
+            self.force_undo(move)
+        self.remove_from_move_stack()
 
     def push(self, move):
 
@@ -322,6 +340,15 @@ class Engine(EngineBase):
 
     def valid_moves(self):
         return self._current_valid_moves
+
+    def add_to_move_stack(self, move):
+        if self._move_stack and (self._move_stack[-1][-1].to_index == move.from_index or move.empty):
+            self._move_stack[-1].append(move)
+        else:
+            self._move_stack.append(list([move]))
+
+    def remove_from_move_stack(self):
+        self._move_stack.pop()
 
 
 # class AIMovePicker:

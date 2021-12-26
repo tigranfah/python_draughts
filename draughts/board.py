@@ -23,6 +23,9 @@ class Board:
         for str_move in str_moves:
             self.push_move(Move(str_move))
 
+    def undo(self):
+        self._engine.undo()
+
     def push_move(self, *moves):
         for m in moves:
             self._engine.push(m)
