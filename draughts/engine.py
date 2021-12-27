@@ -138,6 +138,9 @@ class EngineBase:
         self._fig_count = {}
         self.update_figure_count()
 
+    def reset(self):
+        self.__init_engine()
+
     def force_push(self, move):
         if move.empty: return
 
@@ -192,9 +195,6 @@ class EngineBase:
             return True
         return False
 
-    def reset(self):
-        self.__init_engine()
-
     @property
     def layout(self):
         return self._layout
@@ -208,7 +208,14 @@ class Engine(EngineBase):
 
     def __init__(self, size):
         EngineBase.__init__(self, size)
+        self.__init_engine()
+
+    def __init_engine(self):
         self._current_valid_moves = self.get_valid_moves()
+
+    def reset(self):
+        super().reset()
+        self.__init_engine()
 
     def get_valid_moves(self, jump=False):
         figs = BoardBase.WHITE if self.turn else BoardBase.BLACK
