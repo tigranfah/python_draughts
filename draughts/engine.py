@@ -358,10 +358,17 @@ class Engine(EngineBase):
         self._move_stack.pop()
 
 
-# class AIMovePicker:
-#
-#     def __init__(self, board):
-#         self._board = board
-#
-#     def grid_search(self):
-#         for self.board.valid_moves():
+class AIMovePicker:
+
+    def __init__(self, board, depth):
+        self._board = board
+        self.depth = depth
+        self.optimal_move = None
+        self.gain_lose = [0, 0]
+
+    def grid_search(self, current_depth):
+        if current_depth == depth:
+            return
+
+        
+        for move in self.board.valid_moves():
