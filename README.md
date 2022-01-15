@@ -1,6 +1,6 @@
 # PythonDraughts
 
-**PythonDraughts** is an easy to use draughts engine coded with python (python 3).
+**PythonDraughts** is a command line based and easy to use draughts engine coded with python (python 3).
 
 In interactive notebook.
 ```python
